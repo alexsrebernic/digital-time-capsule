@@ -1,29 +1,23 @@
 import Link from "next/link";
+import Image from "next/image";
+import logoBlack from '@/assets/logo-black.png'
+import logoWhite from '@/assets/logo-white.png'
 
 export function Header({ black = false }) {
   const textColor = black ? "text-black" : "text-white";
   const hoverColor = black ? "hover:text-gray-700" : "hover:text-gray-300";
+  const logoSrc = black ? logoBlack : logoWhite;
 
   return (
     <header className={`px-4 lg:px-6 h-14 flex items-center ${black ? 'bg-white' : 'bg-transparent'}`}>
       <Link className="flex items-center justify-center" href="/">
         <span className="sr-only">Digital Time Capsule</span>
-        <svg
-          className={`h-6 w-6 ${textColor}`}
-          fill="none"
-          height="24"
-          stroke="currentColor"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth="2"
-          viewBox="0 0 24 24"
-          width="24"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <rect height="18" rx="2" width="18" x="3" y="3" />
-          <path d="M21 9H3" />
-          <path d="M9 21V9" />
-        </svg>
+        <Image
+          src={logoSrc}
+          alt="Digital Time Capsule Logo"
+          width={50}
+          height={50}
+        />
       </Link>
       <nav className="ml-auto flex gap-4 sm:gap-6">
         <Link 

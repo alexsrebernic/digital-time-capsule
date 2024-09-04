@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { PlusIcon, SearchIcon, FilterIcon } from 'lucide-react'
+import Link from 'next/link'
 
 // Mock data for capsules
 const capsules = [
@@ -73,14 +74,15 @@ export function MyCapsules() {
           </Card>
         ))}
       </div>
+      <Link href='/create'>
+        <Button 
+          className="fixed bottom-8 right-8 w-14 h-14 rounded-full shadow-lg bg-blue-500 hover:bg-blue-600 transition-colors duration-300"
+        >
+          <PlusIcon className="w-6 h-6" />
+          <span className="sr-only">Create new capsule</span>
+        </Button>
+      </Link>
       
-      <Button 
-        className="fixed bottom-8 right-8 w-14 h-14 rounded-full shadow-lg bg-blue-500 hover:bg-blue-600 transition-colors duration-300"
-        onClick={() => alert('Create new capsule')}
-      >
-        <PlusIcon className="w-6 h-6" />
-        <span className="sr-only">Create new capsule</span>
-      </Button>
     </div>
   )
 }

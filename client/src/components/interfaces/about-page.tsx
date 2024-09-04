@@ -2,7 +2,7 @@
 
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Clock, Lock, Shield, Sparkles } from "lucide-react"
-import { Header } from "./ui/header"
+import { Header } from "../ui/header"
 
 export function AboutPage() {
   return (
