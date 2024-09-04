@@ -1,4 +1,3 @@
-
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Upload, Lock, Unlock } from 'lucide-react'
@@ -11,23 +10,29 @@ import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 
+// Define a type for the files with the preview property
+type FileWithPreview = File & {
+  preview: string;
+};
+
 export function DigitalTimeCapsuleForm() {
-  const [isPublic, setIsPublic] = useState(false)
-  const [files, setFiles] = useState([])
+  // Use the defined type in useState
+  const [files, setFiles] = useState<FileWithPreview[]>([]);
+  const [isPublic, setIsPublic] = useState(false);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    accept: {'image/*': [], 'application/pdf': []},
+    accept: { 'image/*': [], 'application/pdf': [] },
     onDrop: acceptedFiles => {
       setFiles(acceptedFiles.map(file => Object.assign(file, {
         preview: URL.createObjectURL(file)
-      })))
+      })));
     }
-  })
+  });
 
-  const handleSubmit = (event) => {
-    event.preventDefault()
+  const handleSubmit = (event: React.FormEvent) => {
+    event.preventDefault();
     // Handle form submission here
-    console.log('Form submitted')
+    console.log('Form submitted');
   }
 
   return (
@@ -99,5 +104,5 @@ export function DigitalTimeCapsuleForm() {
         </motion.div>
       </form>
     </motion.div>
-  )
+  );
 }

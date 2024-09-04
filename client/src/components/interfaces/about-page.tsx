@@ -21,7 +21,7 @@ export function AboutPage() {
           <h2 className="text-3xl font-semibold mb-6">What is a Digital Time Capsule?</h2>
           <p className="text-lg mb-4 text-gray-300">
             A Digital Time Capsule is a secure, blockchain-based platform that allows you to store digital content
-            and reveal it at a predetermined time in the future. It's like burying a traditional time capsule, but
+            and reveal it at a predetermined time in the future. It`&apos;`s like burying a traditional time capsule, but
             with the added security and flexibility of digital technology.
           </p>
         </section>
@@ -64,7 +64,7 @@ export function AboutPage() {
               <AccordionTrigger className="text-lg px-4">How secure is my content?</AccordionTrigger>
               <AccordionContent className="px-4 pb-4 text-gray-300">
                 Your content is encrypted and stored on a decentralized blockchain, making it extremely secure and
-                tamper-proof. Only you and your designated recipients can access the content when it's unlocked.
+                tamper-proof. Only you and your designated recipients can access the content when it`&apos;`s unlocked.
               </AccordionContent>
             </AccordionItem>
             <AccordionItem value="item-2">
