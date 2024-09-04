@@ -1,9 +1,8 @@
 import { AboutPage } from "@/components/about-page";
 import { Header } from "@/components/ui/header";
-export default function Home() {
+export default function AboutProjectPage() {
   return (
     <>
-    <Header/>
     <AboutPage/>
     </>
   );

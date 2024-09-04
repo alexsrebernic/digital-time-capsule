@@ -11,11 +11,11 @@ interface TimeCapsuleContent {
 }
 
 interface TimeCapsuleProps {
-  title: string;
-  status: 'sealed' | 'opened';
-  openingDate: string;
-  contents: TimeCapsuleContent[];
-  isOwner: boolean;
+  title?: string;
+  status?: 'sealed' | 'opened';
+  openingDate?: string;
+  contents?: TimeCapsuleContent[];
+  isOwner?: boolean;
 }
 
 export function TimeCapsuleView({ 

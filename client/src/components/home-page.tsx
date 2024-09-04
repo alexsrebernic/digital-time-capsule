@@ -22,10 +22,15 @@ export function HomePage() {
                 </p>
               </div>
               <div className="space-x-4">
-                <Button className="bg-purple-600 text-white hover:bg-purple-700">Create Capsule</Button>
-                <Button variant="outline" className="text-purple-600 border-white hover:bg-white hover:text-purple-900">
-                  My Capsules
-                </Button>
+                 <Link href="/create">
+                  <Button className="bg-purple-600 text-white hover:bg-purple-700">Create Capsule</Button>
+                </Link>
+                <Link href="/mycapsules">
+                  <Button variant="outline" className="text-purple-600 border-white hover:bg-white hover:text-purple-900">
+                    My Capsules
+                  </Button>
+                </Link>
+
               </div>
             </div>
           </div>
