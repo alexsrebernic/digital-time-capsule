@@ -108,6 +108,6 @@ This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md
 
 ## Contact
 
-Alex Srebernic - [@your_twitter](https://twitter.com/your_twitter) - alexsrebernic@gmail.com
+Alex Srebernic - [@ASrebernic](https://x.com/ASrebernic) - alexsrebernic@gmail.com
 
 Project Link: [https://github.com/alexsrebernic/digital-time-capsule](https://github.com/alexsrebernic/digital-time-capsule)
