@@ -4,12 +4,13 @@ import { DigitalTimeCapsuleForm } from "@/components/interfaces/digital-time-cap
 import { MyCapsules } from "@/components/interfaces/my-capsules";
 import { Header } from "@/components/ui/header";
 import { UserProfile } from "@/components/interfaces/user-profile";
+import { AuthGuardRedirect } from "@/components/auth/AuthGuardRedirect";
+
 export default function UserProfilePage() {
-  return (
-    <>
-    <Header black/>
-    <UserProfile/>
-    </>
-    
-  );
+	return (
+		<AuthGuardRedirect>
+			<Header black></Header>
+			<UserProfile />
+		</AuthGuardRedirect>
+	);
 }
