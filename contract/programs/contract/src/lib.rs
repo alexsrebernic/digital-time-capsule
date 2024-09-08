@@ -1,29 +1,69 @@
 use anchor_lang::prelude::*;
-//use mpl_token_metadata::state::Metadata;
+use anchor_spl::token::{Mint,Token, TokenAccount};
+use anchor_spl::associated_token::AssociatedToken;
+use mpl_token_metadata::instructions::{CreateMasterEditionV3CpiBuilder,CreateMetadataAccountV3CpiBuilder};
+use mpl_token_metadata::types::{Creator, DataV2};
 
 declare_id!("DWScEV42ig3zGpZUhVXtuV2BzwQ4oxnFeXiBdZB6uDaZ");
 
 #[program]
 pub mod contract {
     use super::*;
-    //use chrono::*;
 
-    pub fn initialize_capsule_machine(ctx: Context<InitializeMachine>, _nft_ :Pubkey) -> Result<()> {
+    pub fn initialize_capsule_machine(ctx: Context<InitializeMachine>) -> Result<()> {
         let capsule_machine: &mut Account<CapsuleMachine> = &mut ctx.accounts.capsule_machine;
         capsule_machine.count = 0; 
         Ok(())
     }
 
-    pub fn create_capsule(ctx: Context<CreateCapsule>, release_date: i64, cid: String) -> Result<()> {
+    pub fn create_capsule(ctx: Context<CreateCapsule>,
+        release_date: i64,
+        cid: String) -> Result<()> {
         let capsule: &mut Account<Capsule> = &mut ctx.accounts.capsule;
         let capsule_machine: &mut Account<CapsuleMachine> = &mut ctx.accounts.capsule_machine;
 
-        capsule.submitter = ctx.accounts.user.key();
+        capsule.creator = ctx.accounts.user.key();
         capsule.released_date = release_date;
         capsule.ipfs_cid = cid;
         capsule.id = capsule_machine.count;
         
         capsule_machine.count += 1;
+
+        let creators = vec![Creator {
+            address: ctx.accounts.user.key(),
+            verified: true,
+            share: 100,
+        }];
+
+        let data = DataV2 {
+            name: "Time Capsule NFT".to_string(),
+            symbol: "TCNFT".to_string(),
+            uri: "ipfs://your_ipfs_link_to_metadata".to_string(),
+            seller_fee_basis_points: 500,
+            creators: Some(creators),
+            collection: None,
+            uses: None,
+        };
+
+        let bump = ctx.bumps.capsule; // Get the bump seed
+        let capsule_machine_key = capsule_machine.key();
+        // Define the signer seeds for the capsule PDA
+        let signer_seeds: &[&[u8]] = &[
+            &capsule_machine.count.to_be_bytes(),   // Seed 1
+            capsule_machine_key.as_ref(),         // Seed 2
+            &[bump],                                // Bump seed
+        ];
+                
+        CreateMetadataAccountV3CpiBuilder::new(&ctx.accounts.token_metadata_program)
+        .metadata(&ctx.accounts.metadata) // Metadata PDA
+        .mint(&ctx.accounts.mint.to_account_info()) // Mint of the NFT
+        .mint_authority(&ctx.accounts.user) // Mint authority (user creating the NFT)
+        .payer(&ctx.accounts.user) // Payer of the transaction
+        .update_authority(&ctx.accounts.user, true) // Update authority of the NFT
+        .data(data)
+        .is_mutable(false) // Whether the metadata is mutable
+        .invoke_signed(&[signer_seeds])?;
+
         Ok(())
     }
 
@@ -101,10 +141,26 @@ pub struct CreateCapsule<'info> {
     )]
     pub capsule: Account<'info, Capsule>,
     #[account(mut)]
-    pub user: Signer<'info>,
-    #[account(mut)]
     pub capsule_machine: Account<'info, CapsuleMachine>,
-    pub system_program: Program<'info, System>
+    #[account(mut)]
+    pub user: Signer<'info>,
+    // NFT related accounts
+    #[account(init, payer = user, mint::decimals = 0, mint::authority = user)]
+    pub mint: Account<'info, Mint>,
+    #[account(init, payer = user, associated_token::mint = mint, associated_token::authority = user)]
+    pub token_account: Account<'info, TokenAccount>,
+    #[account(mut)]
+    pub metadata: AccountInfo<'info>,
+    #[account(mut)]
+    pub master_edition: AccountInfo<'info>,
+    
+    
+    // Programs
+    pub token_metadata_program: AccountInfo<'info>,
+    pub token_program: Program<'info, Token>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
+    pub system_program: Program<'info, System>,
+    pub rent: Sysvar<'info, Rent>,
 }
 
 #[derive(Accounts)]
@@ -125,7 +181,7 @@ pub struct CapsuleMachine{
 #[account]
 #[derive(Default)] //pda capsule 
 pub struct Capsule{
-    pub submitter: Pubkey,
+    pub creator: Pubkey,
     pub id: u64,
     pub ipfs_cid: String,
     pub released_date: i64, //unix timestamp
