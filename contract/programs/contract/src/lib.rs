@@ -94,6 +94,7 @@ pub mod contract {
         
         // If verification passes, proceed with accessing the time capsule
         msg!("Time capsule unlocked!");
+        //retrieve all possible info or ipfs
         Ok(())
     }
 

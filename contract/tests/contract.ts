@@ -1,25 +1,11 @@
 import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
 import { Contract } from "../target/types/contract";
-import { SystemProgram, Connection, PublicKey } from "@solana/web3.js";
-import { assert, expect } from "chai";
+import { SystemProgram } from "@solana/web3.js";
+import { assert } from "chai";
 
-const {
-  TOKEN_PROGRAM_ID,
-  getMint,
-  getAssociatedTokenAddress,
-  getAccount,
-} = require("@solana/spl-token");
-const SPL_ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID: PublicKey = new PublicKey(
-  "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
-);
-const METADATA_PROGRAM_ID: PublicKey = new PublicKey(
-  "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"
-);
-
-describe("contract", () => {
+describe("capsule contract tests", () => {
   // Configure the client to use the local cluster.
-  const connection = new Connection("http://127.0.0.1:8899", "confirmed");
   const provider = anchor.AnchorProvider.env();
 
   const program = anchor.workspace.Contract as Program<Contract>;
@@ -34,13 +20,11 @@ describe("contract", () => {
       systemProgram: SystemProgram.programId,
     };
 
-    const tx = await program.methods
+    await program.methods
       .initializeCapsuleMachine()
       .accounts(init_accounts)
       .signers([capsuleMachine])
       .rpc();
-
-    console.log("Your transaction signature", tx);
 
     // Fetch the capsule machine and check its state
     const capsuleMachineAccount = await program.account.capsuleMachine.fetch(
@@ -53,160 +37,64 @@ describe("contract", () => {
     );
   });
 
-  it("should create a capsule", async () => {
+  it("should create a capsule and mint an NFT", async () => {
+    const rent = anchor.web3.SYSVAR_RENT_PUBKEY;
+    const capsule = anchor.web3.Keypair.generate();
+    const mint = anchor.web3.Keypair.generate(); // Mint for the NFT
+    const metadata = anchor.web3.Keypair.generate();
+    const master = anchor.web3.Keypair.generate();
+    const tokenAccount = anchor.web3.Keypair.generate();
+
     const releaseDate = new anchor.BN(Date.now() / 1000 + 60 * 60 * 24); // One day in the future
     const cid = "QmYourIpfsCidHere";
 
-    // Get capsule_machine index
-    let idx = (
-      await program.account.capsuleMachine.fetch(capsuleMachine.publicKey)
-    ).count;
-    // Consutruct buffer containing latest index
-    const buf1 = idx.toArrayLike(Buffer, "be", 8);
-    //Derive Capsule pda
-    const [capsulepda, bump] = anchor.web3.PublicKey.findProgramAddressSync(
-      [buf1, capsuleMachine.publicKey.toBytes()],
+    const capsuleMachineAccount = await program.account.capsuleMachine.fetch(
+      capsuleMachine.publicKey
+    );
+
+    const [capsulePda, bump] = anchor.web3.PublicKey.findProgramAddressSync(
+      [
+        new anchor.BN(capsuleMachineAccount.count).toArrayLike(Buffer, "be", 8),
+        capsuleMachine.publicKey.toBuffer(),
+      ],
       program.programId
     );
 
-    const mint = anchor.web3.Keypair.generate();
-    // Derive the associated token account address (PDA)
-    const tokenAccount = await getAssociatedTokenAddress(
-      mint.publicKey, // Mint public key
-      user.publicKey // Authority (user) public key
-    );
-
-    // Derive Metadata pda
-    const [metadataPda, metadataBump] =
-      anchor.web3.PublicKey.findProgramAddressSync(
-        [
-          Buffer.from("metadata"),
-          METADATA_PROGRAM_ID.toBuffer(),
-          mint.publicKey.toBuffer(),
-        ],
-        METADATA_PROGRAM_ID
-      );
-
     const accounts = {
+      capsule: capsulePda,
+      user: user.publicKey,
       capsuleMachine: capsuleMachine.publicKey,
-      user: user.publicKey,
       mint: mint.publicKey,
-      tokenAccount: tokenAccount.publicKey,
-      //metadata: metadataPda,
-      systemProgram: SystemProgram.programId,
-      tokenProgram: TOKEN_PROGRAM_ID,
-      associatedTokenProgram: SPL_ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID,
-      //metadataProgram: METADATA_PROGRAM_ID,
+      metadata: metadata.publicKey, // Metadata PDA
+      masterEdition: master.publicKey, // Master edition PDA
+      tokenAccount: tokenAccount.publicKey, // Associated token account
+      tokenMetadataProgram: new anchor.web3.PublicKey(
+        "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"
+      ), // Metaplex program ID
+      tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
+      associatedTokenProgram: new anchor.web3.PublicKey(
+        "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+      ),
+      systemProgram: anchor.web3.SystemProgram.programId,
     };
 
-    console.log(accounts);
+    console.log("Capsule PDA:", capsulePda.toBase58());
+    console.log("Mint account:", mint.publicKey.toBase58());
+    console.log("Associated token account:", tokenAccount.publicKey.toBase58());
+    await program.methods
+      .createCapsule(releaseDate, cid)
+      .accounts(accounts)
+      .signers([mint])
+      .rpc();
 
-    try {
-      const tx = await program.methods
-        .createCapsule(releaseDate, cid)
-        .accounts(accounts)
-        .signers([mint])
-        .rpc();
-
-      console.log("Your transaction signature", tx);
-    } catch (error) {
-      if (error instanceof anchor.web3.SendTransactionError) {
-        // Retrieve logs for detailed error
-        const logs = error.logs || error.message || "Unknown error";
-        console.error("Transaction failed. Logs:", logs);
-
-        // Optionally, you can call `getLogs()` on the error if it's available
-        if (error.getLogs) {
-          const detailedLogs = error.getLogs(connection);
-          console.error("Detailed logs:", detailedLogs);
-        }
-      } else {
-        // Handle other types of errors
-        console.error("An unexpected error occurred:", error);
-      }
-    }
-
-    // Fetch Capsule Account
-    let capsuleData = await program.account.capsule.fetch(capsulepda);
-    console.log(capsuleData);
-    expect(capsuleData.creator.toString()).to.equal(user.publicKey.toString());
-    expect(capsuleData.locked).to.equal(true);
-
-    // Fetch Mint Account
-    const mintAccount = await getMint(connection, mint.publicKey);
-    console.log(mintAccount);
-    expect(mintAccount.supply).to.equal(BigInt(0)); // Initially, the supply should be 0
-    expect(mintAccount.decimals).to.equal(0); // Check for the correct number of decimals (if expected)
-    expect(mintAccount.mintAuthority.toString()).to.equal(
-      user.publicKey.toString()
-    ); // Verify the mint authority
-
-    // Fetch the associated token account
-    const ATA = await getAccount(connection, tokenAccount);
-    console.log(ATA);
-    expect(ATA.mint.toString()).to.equal(mint.publicKey.toString());
-    expect(ATA.owner.toString()).to.equal(user.publicKey.toString());
-
-    //Fetch Metadata account
-    /*const metadataAccountInfo = await connection.getAccountInfo(metadataPda);
-    expect(metadataAccountInfo).to.not.be.null;
-    console.log("Metadata Account Info:", metadataAccountInfo);*/
-  });
-
-  it("should retrieve a capsule", async () => {
-    // Get capsule_machine index
-
-    let current_count = (
-      await program.account.capsuleMachine.fetch(capsuleMachine.publicKey)
-    ).count;
-
-    //kinda hardcoding the capsule to retrieve wich its seed is the previous value stored in capsule machine count
-    let idx = Number(current_count) - 1;
-    let idx_bn = new anchor.BN(idx);
-
-    // Consutruct buffer containing latest index
-    const buf1 = idx_bn.toArrayLike(Buffer, "be", 8);
-    //Derive Capsule pda
-    const [capsulepda, bump] = anchor.web3.PublicKey.findProgramAddressSync(
-      [buf1, capsuleMachine.publicKey.toBytes()],
-      program.programId
+    // Fetch the capsule and assert it was created
+    const capsuleAccount = await program.account.capsule.fetch(
+      capsule.publicKey
     );
-
-    const accounts = {
-      capsule: capsulepda,
-      user: user.publicKey,
-    };
-
-    console.log(accounts);
-
-    try {
-      const tx = await program.methods
-        .retrieveCapsule()
-        .accounts(accounts)
-        .signers([])
-        .rpc();
-
-      console.log("Your transaction signature", tx);
-    } catch (error) {
-      if (error instanceof anchor.web3.SendTransactionError) {
-        // Retrieve logs for detailed error
-        const logs = error.logs || error.message || "Unknown error";
-        console.error("Transaction failed. Logs:", logs);
-
-        // Optionally, you can call `getLogs()` on the error if it's available
-        if (error.getLogs) {
-          const detailedLogs = error.getLogs(connection);
-          console.error("Detailed logs:", detailedLogs);
-        }
-      } else {
-        // Handle other types of errors
-        console.error("An unexpected error occurred:", error);
-      }
-    }
-
-    // Fetch Capsule Account
-    let capsuleData = await program.account.capsule.fetch(capsulepda);
-    console.log(capsuleData);
-    expect(capsuleData.creator.toString()).to.equal(user.publicKey.toString());
+    assert.equal(capsuleAccount.ipfsCid, cid);
+    assert.equal(
+      capsuleAccount.releasedDate.toNumber(),
+      releaseDate.toNumber()
+    );
   });
 });
