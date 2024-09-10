@@ -1,6 +1,5 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token::{Mint,Token, TokenAccount};
-use anchor_spl::associated_token::AssociatedToken;
+use anchor_spl::{token::{TokenAccount, Mint, Token}, associated_token::AssociatedToken};
 use mpl_token_metadata::instructions::{CreateMasterEditionV3CpiBuilder,CreateMetadataAccountV3CpiBuilder};
 use mpl_token_metadata::types::{Creator, DataV2};
 
@@ -150,12 +149,17 @@ pub struct CreateCapsule<'info> {
     #[account(init, payer = user, associated_token::mint = mint, associated_token::authority = user)]
     pub token_account: Account<'info, TokenAccount>,
     #[account(mut)]
+    ///CHECK: This seems to be dangerous but idk
     pub metadata: AccountInfo<'info>,
     #[account(mut)]
+    ///CHECK: This too lol
     pub master_edition: AccountInfo<'info>,
     
     
     // Programs
+    ///CHECK: Maybe changing account types?
+    /// Two of the Anchor account types, AccountInfo and UncheckedAccount do not implement any checks on the account being passed.
+    /// Anchor implements safety checks that encourage additional documentation describing why additional checks are not necesssary.
     pub token_metadata_program: AccountInfo<'info>,
     pub token_program: Program<'info, Token>,
     pub associated_token_program: Program<'info, AssociatedToken>,
