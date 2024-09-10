@@ -7,6 +7,7 @@ declare_id!("DWScEV42ig3zGpZUhVXtuV2BzwQ4oxnFeXiBdZB6uDaZ");
 
 #[program]
 pub mod contract {
+
     use super::*;
 
     pub fn initialize_capsule_machine(ctx: Context<InitializeMachine>) -> Result<()> {
@@ -62,6 +63,21 @@ pub mod contract {
         .data(data)
         .is_mutable(false) // Whether the metadata is mutable
         .invoke_signed(&[signer_seeds])?;
+
+        CreateMasterEditionV3CpiBuilder::new(&ctx.accounts.token_metadata_program)
+        .edition(&ctx.accounts.master_edition) // Unallocated edition V2 account with address as pda of [‘metadata’, program id, mint, ‘edition’]
+        .mint(&ctx.accounts.mint.to_account_info()) // Metadata mint
+        .update_authority(&ctx.accounts.user) // Update authority
+        .mint_authority(&ctx.accounts.user) // Mint authority on the metadata’s mint - THIS WILL TRANSFER AUTHORITY AWAY FROM THIS KEY
+        .payer(&ctx.accounts.user) // Payer of the transaction
+        .metadata(&ctx.accounts.metadata)
+        .token_program(&ctx.accounts.token_program)
+        .system_program(&ctx.accounts.system_program)
+        //.rent() // rent (optional)
+        //.max_supply(max_supply) // (optional)
+        .add_remaining_account(&ctx.accounts.token_account.to_account_info(), true, false) //Add an additional account to the instruction.
+        .invoke_signed(&[signer_seeds])?;
+
 
         Ok(())
     }
