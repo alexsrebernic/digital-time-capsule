@@ -1,7 +1,8 @@
 use anchor_lang::prelude::*;
 use anchor_spl::{token::{TokenAccount, Mint, Token}, associated_token::AssociatedToken};
 use mpl_token_metadata::instructions::{CreateMasterEditionV3CpiBuilder,CreateMetadataAccountV3CpiBuilder};
-use mpl_token_metadata::types::{Creator, DataV2};
+use mpl_token_metadata::types::{Creator, DataV2, };
+use mpl_token_metadata::accounts::{Metadata, MasterEdition};
 
 declare_id!("DWScEV42ig3zGpZUhVXtuV2BzwQ4oxnFeXiBdZB6uDaZ");
 
@@ -28,6 +29,12 @@ pub mod contract {
         capsule.id = capsule_machine.count;
         
         capsule_machine.count += 1;
+        
+        msg 
+        //NFT minting
+
+        let (metadata_pda, metadata_bump) = Metadata::find_pda(&ctx.accounts.mint.key());
+        let (master_edition_pda, metadata_bump) = MasterEdition::find_pda(&ctx.accounts.mint.key());
 
         let creators = vec![Creator {
             address: ctx.accounts.user.key(),
@@ -165,10 +172,10 @@ pub struct CreateCapsule<'info> {
     pub mint: Account<'info, Mint>,
     #[account(init, payer = user, associated_token::mint = mint, associated_token::authority = user)]
     pub token_account: Account<'info, TokenAccount>,
-    #[account(mut)]
+    #[account(mut, seeds = [b"metadata", token_metadata_program.key().as_ref(), mint.key().as_ref()], bump)]
     ///CHECK: This seems to be dangerous but idk
     pub metadata: AccountInfo<'info>,
-    #[account(mut)]
+    #[account(mut, seeds = [b"metadata", token_metadata_program.key().as_ref(), mint.key().as_ref(), b"edition"], bump)]
     ///CHECK: This too lol
     pub master_edition: AccountInfo<'info>,
     
