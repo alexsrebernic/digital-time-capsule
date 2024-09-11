@@ -15,6 +15,23 @@ pub mod contract {
         capsule_machine.count = 0; 
         Ok(())
     }
+
+    pub fn create_capsule(ctx: Context<CreateCapsule>,
+        release_date: i64,
+        cid: String)-> Result<()> {
+            msg!("create capsule");
+
+        let capsule: &mut Account<Capsule> = &mut ctx.accounts.capsule;
+        let capsule_machine: &mut Account<CapsuleMachine> = &mut ctx.accounts.capsule_machine;
+
+        capsule.creator = ctx.accounts.user.key();
+        capsule.released_date = release_date;
+        capsule.ipfs_cid = cid;
+        capsule.id = capsule_machine.count;
+        
+        capsule_machine.count += 1;
+        Ok(())
+    }
 }
 
 #[derive(Accounts)]
@@ -26,10 +43,42 @@ pub struct InitializeMachine<'info> {
     pub system_program: Program<'info, System>
 }
 
+#[derive(Accounts)]
+pub struct CreateCapsule<'info> {             
+    //seed schema     
+    #[account(init, 
+        seeds = [
+            &capsule_machine.count.to_be_bytes(), 
+            capsule_machine.key().as_ref()
+        ], 
+        //constraint = ,
+        bump, 
+        payer = user, 
+        space=98
+    )]
+    pub capsule: Account<'info, Capsule>,
+    #[account(mut)]
+    pub capsule_machine: Account<'info, CapsuleMachine>,
+    #[account(mut)]
+    pub user: Signer<'info>,
+    
+    // Programs
+    pub system_program: Program<'info, System>,
+}
 //------------Accounts------------------
 #[account]
 pub struct CapsuleMachine{
     pub count: u64,
+}
+
+#[account]
+#[derive(Default)] //pda capsule 
+pub struct Capsule{
+    pub creator: Pubkey,
+    pub id: u64,
+    pub ipfs_cid: String,
+    pub released_date: i64, //unix timestamp
+    //pub encryption_key: String,
 }
 
 //------------Errors------------------
