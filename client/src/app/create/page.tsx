@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { DigitalTimeCapsuleForm } from "@/components/interfaces/digital-time-capsule-form";
 import { Button } from "@/components/ui/button";
