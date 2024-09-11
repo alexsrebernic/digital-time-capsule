@@ -13,6 +13,9 @@ const {
 const SPL_ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID: PublicKey = new PublicKey(
   "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
 );
+const METADATA_PROGRAM_ID: PublicKey = new PublicKey(
+  "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"
+);
 
 describe("contract", () => {
   // Configure the client to use the local cluster.
@@ -60,7 +63,7 @@ describe("contract", () => {
     ).count;
     // Consutruct buffer containing latest index
     const buf1 = idx.toArrayLike(Buffer, "be", 8);
-
+    //Derive Capsule pda
     const [capsulepda, bump] = anchor.web3.PublicKey.findProgramAddressSync(
       [buf1, capsuleMachine.publicKey.toBytes()],
       program.programId
@@ -73,14 +76,27 @@ describe("contract", () => {
       user.publicKey // Authority (user) public key
     );
 
+    // Derive Metadata pda
+    const [metadataPda, metadataBump] =
+      anchor.web3.PublicKey.findProgramAddressSync(
+        [
+          Buffer.from("metadata"),
+          METADATA_PROGRAM_ID.toBuffer(),
+          mint.publicKey.toBuffer(),
+        ],
+        METADATA_PROGRAM_ID
+      );
+
     const accounts = {
       capsuleMachine: capsuleMachine.publicKey,
       user: user.publicKey,
       mint: mint.publicKey,
       tokenAccount: tokenAccount.publicKey,
+      //metadata: metadataPda,
       systemProgram: SystemProgram.programId,
       tokenProgram: TOKEN_PROGRAM_ID,
       associatedTokenProgram: SPL_ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID,
+      //metadataProgram: METADATA_PROGRAM_ID,
     };
 
     console.log(accounts);
@@ -114,6 +130,7 @@ describe("contract", () => {
     let capsuleData = await program.account.capsule.fetch(capsulepda);
     console.log(capsuleData);
     expect(capsuleData.creator.toString()).to.equal(user.publicKey.toString());
+    expect(capsuleData.locked).to.equal(true);
 
     // Fetch Mint Account
     const mintAccount = await getMint(connection, mint.publicKey);
@@ -129,5 +146,67 @@ describe("contract", () => {
     console.log(ATA);
     expect(ATA.mint.toString()).to.equal(mint.publicKey.toString());
     expect(ATA.owner.toString()).to.equal(user.publicKey.toString());
+
+    //Fetch Metadata account
+    /*const metadataAccountInfo = await connection.getAccountInfo(metadataPda);
+    expect(metadataAccountInfo).to.not.be.null;
+    console.log("Metadata Account Info:", metadataAccountInfo);*/
+  });
+
+  it("should retrieve a capsule", async () => {
+    // Get capsule_machine index
+
+    let current_count = (
+      await program.account.capsuleMachine.fetch(capsuleMachine.publicKey)
+    ).count;
+
+    //kinda hardcoding the capsule to retrieve wich its seed is the previous value stored in capsule machine count
+    let idx = Number(current_count) - 1;
+    let idx_bn = new anchor.BN(idx);
+
+    // Consutruct buffer containing latest index
+    const buf1 = idx_bn.toArrayLike(Buffer, "be", 8);
+    //Derive Capsule pda
+    const [capsulepda, bump] = anchor.web3.PublicKey.findProgramAddressSync(
+      [buf1, capsuleMachine.publicKey.toBytes()],
+      program.programId
+    );
+
+    const accounts = {
+      capsule: capsulepda,
+      user: user.publicKey,
+    };
+
+    console.log(accounts);
+
+    try {
+      const tx = await program.methods
+        .retrieveCapsule()
+        .accounts(accounts)
+        .signers([])
+        .rpc();
+
+      console.log("Your transaction signature", tx);
+    } catch (error) {
+      if (error instanceof anchor.web3.SendTransactionError) {
+        // Retrieve logs for detailed error
+        const logs = error.logs || error.message || "Unknown error";
+        console.error("Transaction failed. Logs:", logs);
+
+        // Optionally, you can call `getLogs()` on the error if it's available
+        if (error.getLogs) {
+          const detailedLogs = error.getLogs(connection);
+          console.error("Detailed logs:", detailedLogs);
+        }
+      } else {
+        // Handle other types of errors
+        console.error("An unexpected error occurred:", error);
+      }
+    }
+
+    // Fetch Capsule Account
+    let capsuleData = await program.account.capsule.fetch(capsulepda);
+    console.log(capsuleData);
+    expect(capsuleData.creator.toString()).to.equal(user.publicKey.toString());
   });
 });
