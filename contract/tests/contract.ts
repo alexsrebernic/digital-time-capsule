@@ -3,9 +3,13 @@ import { Program } from "@coral-xyz/anchor";
 import { Contract } from "../target/types/contract";
 import { SystemProgram, Connection, PublicKey } from "@solana/web3.js";
 import { assert, expect } from "chai";
-import { min } from "bn.js";
 
-const { TOKEN_PROGRAM_ID, getMint } = require("@solana/spl-token");
+const {
+  TOKEN_PROGRAM_ID,
+  getMint,
+  getAssociatedTokenAddress,
+  getAccount,
+} = require("@solana/spl-token");
 const SPL_ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID: PublicKey = new PublicKey(
   "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
 );
@@ -63,13 +67,17 @@ describe("contract", () => {
     );
 
     const mint = anchor.web3.Keypair.generate();
-    const tokenAccount = anchor.web3.Keypair.generate();
+    // Derive the associated token account address (PDA)
+    const tokenAccount = await getAssociatedTokenAddress(
+      mint.publicKey, // Mint public key
+      user.publicKey // Authority (user) public key
+    );
 
     const accounts = {
       capsuleMachine: capsuleMachine.publicKey,
       user: user.publicKey,
       mint: mint.publicKey,
-      //tokenAccount: tokenAccount.publicKey,
+      tokenAccount: tokenAccount.publicKey,
       systemProgram: SystemProgram.programId,
       tokenProgram: TOKEN_PROGRAM_ID,
       associatedTokenProgram: SPL_ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID,
@@ -102,9 +110,12 @@ describe("contract", () => {
       }
     }
 
+    // Fetch Capsule Account
     let capsuleData = await program.account.capsule.fetch(capsulepda);
+    console.log(capsuleData);
     expect(capsuleData.creator.toString()).to.equal(user.publicKey.toString());
 
+    // Fetch Mint Account
     const mintAccount = await getMint(connection, mint.publicKey);
     console.log(mintAccount);
     expect(mintAccount.supply).to.equal(BigInt(0)); // Initially, the supply should be 0
@@ -112,6 +123,11 @@ describe("contract", () => {
     expect(mintAccount.mintAuthority.toString()).to.equal(
       user.publicKey.toString()
     ); // Verify the mint authority
-    console.log(capsuleData);
+
+    // Fetch the associated token account
+    const ATA = await getAccount(connection, tokenAccount);
+    console.log(ATA);
+    expect(ATA.mint.toString()).to.equal(mint.publicKey.toString());
+    expect(ATA.owner.toString()).to.equal(user.publicKey.toString());
   });
 });

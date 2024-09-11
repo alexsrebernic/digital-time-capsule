@@ -64,8 +64,8 @@ pub struct CreateCapsule<'info> {
 
     #[account(init, payer = user, mint::decimals = 0, mint::authority = user)]
     pub mint: Account<'info, Mint>,
-    //#[account(init, payer = user, associated_token::mint = mint, associated_token::authority = user)]
-    //pub token_account: Account<'info, TokenAccount>,
+    #[account(init, payer = user, associated_token::mint = mint, associated_token::authority = user)]
+    pub token_account: Account<'info, TokenAccount>,
     
     // Programs
     pub token_program: Program<'info, Token>,
