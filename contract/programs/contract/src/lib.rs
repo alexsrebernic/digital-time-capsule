@@ -19,7 +19,7 @@ pub mod contract {
     pub fn create_capsule(ctx: Context<CreateCapsule>,
         release_date: i64,
         cid: String)-> Result<()> {
-            msg!("create capsule");
+        msg!("create capsule");
 
         let capsule: &mut Account<Capsule> = &mut ctx.accounts.capsule;
         let capsule_machine: &mut Account<CapsuleMachine> = &mut ctx.accounts.capsule_machine;
@@ -61,9 +61,17 @@ pub struct CreateCapsule<'info> {
     pub capsule_machine: Account<'info, CapsuleMachine>,
     #[account(mut)]
     pub user: Signer<'info>,
+
+    #[account(init, payer = user, mint::decimals = 0, mint::authority = user)]
+    pub mint: Account<'info, Mint>,
+    //#[account(init, payer = user, associated_token::mint = mint, associated_token::authority = user)]
+    //pub token_account: Account<'info, TokenAccount>,
     
     // Programs
+    pub token_program: Program<'info, Token>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
     pub system_program: Program<'info, System>,
+
 }
 //------------Accounts------------------
 #[account]

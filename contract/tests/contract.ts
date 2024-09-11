@@ -1,8 +1,14 @@
 import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
 import { Contract } from "../target/types/contract";
-import { SystemProgram, Connection } from "@solana/web3.js";
+import { SystemProgram, Connection, PublicKey } from "@solana/web3.js";
 import { assert, expect } from "chai";
+import { min } from "bn.js";
+
+const { TOKEN_PROGRAM_ID, getMint } = require("@solana/spl-token");
+const SPL_ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID: PublicKey = new PublicKey(
+  "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+);
 
 describe("contract", () => {
   // Configure the client to use the local cluster.
@@ -44,7 +50,7 @@ describe("contract", () => {
     const releaseDate = new anchor.BN(Date.now() / 1000 + 60 * 60 * 24); // One day in the future
     const cid = "QmYourIpfsCidHere";
 
-    // Get lottery index
+    // Get capsule_machine index
     let idx = (
       await program.account.capsuleMachine.fetch(capsuleMachine.publicKey)
     ).count;
@@ -56,17 +62,26 @@ describe("contract", () => {
       program.programId
     );
 
+    const mint = anchor.web3.Keypair.generate();
+    const tokenAccount = anchor.web3.Keypair.generate();
+
     const accounts = {
       capsuleMachine: capsuleMachine.publicKey,
       user: user.publicKey,
+      mint: mint.publicKey,
+      //tokenAccount: tokenAccount.publicKey,
       systemProgram: SystemProgram.programId,
+      tokenProgram: TOKEN_PROGRAM_ID,
+      associatedTokenProgram: SPL_ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID,
     };
+
+    console.log(accounts);
 
     try {
       const tx = await program.methods
         .createCapsule(releaseDate, cid)
         .accounts(accounts)
-        .signers([])
+        .signers([mint])
         .rpc();
 
       console.log("Your transaction signature", tx);
@@ -90,6 +105,13 @@ describe("contract", () => {
     let capsuleData = await program.account.capsule.fetch(capsulepda);
     expect(capsuleData.creator.toString()).to.equal(user.publicKey.toString());
 
+    const mintAccount = await getMint(connection, mint.publicKey);
+    console.log(mintAccount);
+    expect(mintAccount.supply).to.equal(BigInt(0)); // Initially, the supply should be 0
+    expect(mintAccount.decimals).to.equal(0); // Check for the correct number of decimals (if expected)
+    expect(mintAccount.mintAuthority.toString()).to.equal(
+      user.publicKey.toString()
+    ); // Verify the mint authority
     console.log(capsuleData);
   });
 });
