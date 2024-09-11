@@ -1,18 +1,18 @@
-import type { NextApiRequest, NextApiResponse } from 'next'
+import { NextResponse } from 'next/server';
 import pinataSDK from "@pinata/sdk";
 
 const pinata = new pinataSDK({ pinataJWTKey: process.env.PINATA_JWT });
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
+export async function POST
+(
+  request: Request,
 ) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ message: 'Method Not Allowed' });
+  if (request.method !== 'POST') {
+    return NextResponse.json({ message: 'Method Not Allowed' }, { status: 405 });
   }
 
   try {
-    const { title, description, openingDate, files } = req.body;
+    const { title, description, openingDate, files } = await request.json();
 
     // Create a JSON metadata file
     const metadata = JSON.stringify({
@@ -37,9 +37,9 @@ export default async function handler(
     // Upload final metadata to IPFS
     const finalResult = await pinata.pinJSONToIPFS(finalMetadata);
 
-    res.status(200).json({ ipfsHash: finalResult.IpfsHash });
+    return NextResponse.json({ ipfsHash: finalResult.IpfsHash });
   } catch (error) {
     console.error("Error uploading to Pinata:", error);
-    res.status(500).json({ message: 'Error uploading to IPFS' });
+    return NextResponse.json({ message: 'Error uploading to IPFS' }, { status: 500 });
   }
 }

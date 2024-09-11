@@ -1,4 +1,4 @@
-'use client'
+"use client"
 
 import { useState, useEffect } from 'react'
 import { Share2, Edit2, Trash2, Lock, Unlock } from 'lucide-react'

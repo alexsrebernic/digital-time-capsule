@@ -1,8 +1,11 @@
 import { PublicKey, Keypair } from "@solana/web3.js";
 import * as anchor from "@coral-xyz/anchor";
 
+// Define a type for your Anchor program
+type CapsuleMachineProgram = anchor.Program<anchor.Idl>;
+
 // Function to initialize the capsule machine
-export const initializeCapsuleMachine = async (program: anchor.Program, provider: anchor.Provider) => {
+export const initializeCapsuleMachine = async (program: CapsuleMachineProgram, provider: anchor.AnchorProvider) => {
   const capsuleMachine = Keypair.generate();
 
   try {
@@ -10,7 +13,7 @@ export const initializeCapsuleMachine = async (program: anchor.Program, provider
       .initializeCapsuleMachine()
       .accounts({
         capsuleMachine: capsuleMachine.publicKey,
-        user: provider.publicKey!,
+        user: provider.wallet.publicKey,
         systemProgram: anchor.web3.SystemProgram.programId,
       })
       .signers([capsuleMachine])
@@ -26,14 +29,14 @@ export const initializeCapsuleMachine = async (program: anchor.Program, provider
 
 // Function to create a capsule
 export const createCapsule = async (
-  program: anchor.Program,
-  provider: anchor.Provider,
+  program: CapsuleMachineProgram,
+  provider: anchor.AnchorProvider,
   capsuleMachinePublicKey: PublicKey,
   ipfsHash: string,
   releaseDate: number
 ) => {
   try {
-    const capsuleMachineAccount = await program.account.capsuleMachine.fetch(capsuleMachinePublicKey);
+    const capsuleMachineAccount = await (program.account as any).capsuleMachine.fetch(capsuleMachinePublicKey);
     const [capsulePda, ] = PublicKey.findProgramAddressSync(
       [
         Buffer.from(capsuleMachineAccount.count.toString()),
@@ -50,12 +53,12 @@ export const createCapsule = async (
       .createCapsule(new anchor.BN(releaseDate), ipfsHash)
       .accounts({
         capsule: capsulePda,
-        user: provider.publicKey,
+        user: provider.wallet.publicKey,
         capsuleMachine: capsuleMachinePublicKey,
         mint: mint.publicKey,
         metadata,
         masterEdition,
-        tokenAccount: await getAssociatedTokenAddress(mint.publicKey, provider.publicKey),
+        tokenAccount: await getAssociatedTokenAddress(mint.publicKey, provider.wallet.publicKey),
         tokenMetadataProgram: new PublicKey("metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"),
         tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
         associatedTokenProgram: new PublicKey("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"),
@@ -74,7 +77,7 @@ export const createCapsule = async (
 };
 
 // Helper function to get Metadata PDA
-const getMetadataPda = async (mint: PublicKey) => {
+const getMetadataPda = async (mint: PublicKey): Promise<PublicKey> => {
   const [metadataPda] = PublicKey.findProgramAddressSync(
     [
       Buffer.from("metadata"),
@@ -87,7 +90,7 @@ const getMetadataPda = async (mint: PublicKey) => {
 };
 
 // Helper function to get Master Edition PDA
-const getMasterEditionPda = async (mint: PublicKey) => {
+const getMasterEditionPda = async (mint: PublicKey): Promise<PublicKey> => {
   const [masterEditionPda] = PublicKey.findProgramAddressSync(
     [
       Buffer.from("metadata"),
@@ -101,7 +104,7 @@ const getMasterEditionPda = async (mint: PublicKey) => {
 };
 
 // Helper function to get Associated Token Address
-const getAssociatedTokenAddress = async (mint: PublicKey, owner: PublicKey) => {
+const getAssociatedTokenAddress = async (mint: PublicKey, owner: PublicKey): Promise<PublicKey> => {
   const [associatedTokenAddress] = PublicKey.findProgramAddressSync(
     [
       owner.toBuffer(),

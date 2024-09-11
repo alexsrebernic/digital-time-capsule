@@ -4,7 +4,6 @@ import { Connection, PublicKey } from '@solana/web3.js';
 import { Program, AnchorProvider, Idl } from '@coral-xyz/anchor';
 import { useAnchorWallet, useConnection, useWallet } from '@solana/wallet-adapter-react';
 import { MockProgram } from '@/mocks/MockProgram';
-import { mockIdl } from '@/mocks/MockIDL';
 // Placeholder for the contract type
 type PlaceholderContract = {
   // Add placeholder methods and properties here

@@ -3,6 +3,7 @@ import { CapsuleData } from "@/models/CapsuleData";
 
 export async function uploadToPinata(data: CapsuleData): Promise<string> {
   try {
+    if(!data.files) throw Error("No files provides");
     const response = await axios.post('/api/upload-to-ipfs', {
       title: data.title,
       description: data.description,
