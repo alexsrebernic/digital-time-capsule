@@ -4,7 +4,7 @@ use mpl_token_metadata::instructions::{CreateMasterEditionV3CpiBuilder,CreateMet
 use mpl_token_metadata::types::{Creator, DataV2, };
 use mpl_token_metadata::accounts::{Metadata, MasterEdition};
 
-declare_id!("DWScEV42ig3zGpZUhVXtuV2BzwQ4oxnFeXiBdZB6uDaZ");
+declare_id!("CUktgcSXVf9YHzHw9YrZ3gFDYeegaBrxFuCxEwdE6VAF");
 
 #[program]
 pub mod contract {
@@ -20,6 +20,7 @@ pub mod contract {
     pub fn create_capsule(ctx: Context<CreateCapsule>,
         release_date: i64,
         cid: String) -> Result<()> {
+        msg!("create capsule");
         let capsule: &mut Account<Capsule> = &mut ctx.accounts.capsule;
         let capsule_machine: &mut Account<CapsuleMachine> = &mut ctx.accounts.capsule_machine;
 
@@ -30,7 +31,7 @@ pub mod contract {
         
         capsule_machine.count += 1;
         
-        msg 
+        msg!("minting beggins");
         //NFT minting
 
         let (metadata_pda, metadata_bump) = Metadata::find_pda(&ctx.accounts.mint.key());
@@ -60,16 +61,20 @@ pub mod contract {
             capsule_machine_key.as_ref(),         // Seed 2
             &[bump],                                // Bump seed
         ];
-                
+        
+        msg!("metadata: {:?}", ctx.accounts.metadata);
+        msg!("mint: {:?}", ctx.accounts.mint);
+        msg!("metadata: {:?}", ctx.accounts.user);
+        /* 
         CreateMetadataAccountV3CpiBuilder::new(&ctx.accounts.token_metadata_program)
         .metadata(&ctx.accounts.metadata) // Metadata PDA
-        .mint(&ctx.accounts.mint.to_account_info()) // Mint of the NFT
+        .mint(&ctx.accounts.mint.to_account_info()) // Mint o                                                                                                                                                                                                                                                                                                                         f the NFT
         .mint_authority(&ctx.accounts.user) // Mint authority (user creating the NFT)
         .payer(&ctx.accounts.user) // Payer of the transaction
         .update_authority(&ctx.accounts.user, true) // Update authority of the NFT
         .data(data)
         .is_mutable(false) // Whether the metadata is mutable
-        .invoke_signed(&[signer_seeds])?;
+        .invoke()?;
 
         CreateMasterEditionV3CpiBuilder::new(&ctx.accounts.token_metadata_program)
         .edition(&ctx.accounts.master_edition) // Unallocated edition V2 account with address as pda of [‘metadata’, program id, mint, ‘edition’]
@@ -83,8 +88,7 @@ pub mod contract {
         //.rent() // rent (optional)
         //.max_supply(max_supply) // (optional)
         .add_remaining_account(&ctx.accounts.token_account.to_account_info(), true, false) //Add an additional account to the instruction.
-        .invoke_signed(&[signer_seeds])?;
-
+        .invoke_signed(&[signer_seeds])?;*/
 
         Ok(())
     }
@@ -108,37 +112,6 @@ pub mod contract {
     //instructions
 }
 
-//------------Helper fn----------------
-/* 
-pub fn is_token_owner(token_account: &AccountInfo, owner: &Pubkey) -> Result<bool, ProgramError> {
-    // Implementation to check if the given owner owns the token
-}
- 
-pub fn verify_nft_ownership(
-    program_id: &Pubkey,
-    accounts: &[AccountInfo],
-) -> ProgramResult {
-    let account_info_iter = &mut accounts.iter();
-    let time_capsule_account = next_account_info(account_info_iter)?;
-    let nft_token_account = next_account_info(account_info_iter)?;
-    let nft_mint = next_account_info(account_info_iter)?;
-    let metadata_account = next_account_info(account_info_iter)?;
-    let owner = next_account_info(account_info_iter)?;
-
-    // Verify NFT ownership
-    if !is_token_owner(nft_token_account, owner.key)? {
-        return Err(ProgramError::InvalidAccountData.into());
-    }
-
-    // Verify NFT metadata
-    let metadata = Metadata::from_account_info(metadata_account)?;
-    if metadata.mint != *nft_mint.key {
-        return Err(ProgramError::InvalidAccountData.into());
-    }
-
-    Ok(())
-}
-*/
 //------------Context------------------
 #[derive(Accounts)]
 pub struct InitializeMachine<'info> {             
@@ -172,10 +145,10 @@ pub struct CreateCapsule<'info> {
     pub mint: Account<'info, Mint>,
     #[account(init, payer = user, associated_token::mint = mint, associated_token::authority = user)]
     pub token_account: Account<'info, TokenAccount>,
-    #[account(mut, seeds = [b"metadata", token_metadata_program.key().as_ref(), mint.key().as_ref()], bump)]
+    #[account(mut, seeds = [b"metadata", token_metadata_program.key().as_ref(), mint.key().as_ref()], bump, seeds::program = token_metadata_program.key())]
     ///CHECK: This seems to be dangerous but idk
     pub metadata: AccountInfo<'info>,
-    #[account(mut, seeds = [b"metadata", token_metadata_program.key().as_ref(), mint.key().as_ref(), b"edition"], bump)]
+    #[account(mut, seeds = [b"metadata", token_metadata_program.key().as_ref(), mint.key().as_ref(), b"edition"], bump,seeds::program = token_metadata_program.key())]
     ///CHECK: This too lol
     pub master_edition: AccountInfo<'info>,
     

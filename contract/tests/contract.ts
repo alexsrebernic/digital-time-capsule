@@ -1,7 +1,7 @@
 import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
 import { Contract } from "../target/types/contract";
-import { SystemProgram } from "@solana/web3.js";
+import { SystemProgram, Connection, clusterApiUrl } from "@solana/web3.js";
 import { assert } from "chai";
 
 const TOKEN_METADATA_PROGRAM_ID = "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s";
@@ -10,6 +10,7 @@ const ASSOCIATED_TOKEN_PROGRAM_ID =
 
 describe("capsule contract tests", () => {
   // Configure the client to use the local cluster.
+  const connection = new Connection("http://127.0.0.1:8899", "confirmed");
   const provider = anchor.AnchorProvider.env();
 
   const program = anchor.workspace.Contract as Program<Contract>;
@@ -97,15 +98,16 @@ describe("capsule contract tests", () => {
 
     const accounts = {
       capsule: capsulePda,
-      user: user.publicKey,
       capsuleMachine: capsuleMachine.publicKey,
+      user: user.publicKey,
       mint: mint.publicKey,
+      tokenAccount: tokenAccount.publicKey, // Associated token account
       metadata: metadata, // Metadata PDA
       masterEdition: master, // Master edition PDA
-      tokenAccount: tokenAccount.publicKey, // Associated token account
       tokenMetadataProgram: metadata_token_program_key, // Metaplex program ID
       tokenProgram: associated_token_program_key,
       systemProgram: anchor.web3.SystemProgram.programId,
+      rent: anchor.web3.SYSVAR_RENT_PUBKEY,
     };
 
     console.log("Capsule PDA:", capsulePda.toBase58());
@@ -113,12 +115,28 @@ describe("capsule contract tests", () => {
     console.log("Associated token account:", tokenAccount.publicKey.toBase58());
     console.log("Metadata PDA:", metadata.toBase58());
     console.log("Master PDA:", master.toBase58());
-    await program.methods
-      .createCapsule(releaseDate, cid)
-      .accounts(accounts)
-      .signers([mint])
-      .rpc();
+    try {
+      await program.methods
+        .createCapsule(releaseDate, cid)
+        .accounts(accounts)
+        .signers([mint])
+        .rpc();
+    } catch (error) {
+      if (error instanceof anchor.web3.SendTransactionError) {
+        // Retrieve logs for detailed error
+        const logs = error.logs || error.message || "Unknown error";
+        console.error("Transaction failed. Logs:", logs);
 
+        // Optionally, you can call `getLogs()` on the error if it's available
+        if (error.getLogs) {
+          const detailedLogs = error.getLogs(connection);
+          console.error("Detailed logs:", detailedLogs);
+        }
+      } else {
+        // Handle other types of errors
+        console.error("An unexpected error occurred:", error);
+      }
+    }
     // Fetch the capsule and assert it was created
     const capsuleAccount = await program.account.capsule.fetch(capsulePda);
     assert.equal(capsuleAccount.ipfsCid, cid);
