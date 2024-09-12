@@ -47,11 +47,20 @@ export const createCapsule = async (
   try {
     console.log(capsuleMachinePublicKey)
   
+    const capsuleMachineAccount = await program.account.capsuleMachine.fetch(
+      capsuleMachinePublicKey
+    );
 
+    const [capsulePda] = PublicKey.findProgramAddressSync(
+      [
+        new anchor.BN(capsuleMachineAccount.count).toArrayLike(Buffer, "be", 8),
+        capsuleMachinePublicKey.toBuffer(),
+      ],
+      program.programId
+    );
     const mint = Keypair.generate();
     const metadata = await getMetadataPda(mint.publicKey);
     const masterEdition = await getMasterEditionPda(mint.publicKey);
-    const capsule = 
     const accounts = {
       capsuleMachine: capsuleMachinePublicKey,
       user: provider.wallet.publicKey,
@@ -75,7 +84,10 @@ export const createCapsule = async (
       tx.partialSign(mint);
   
       await provider.wallet.signTransaction(tx)
+    console.log("Capsule created. Transaction signature:", tx);
+    console.log("Capsule created. Transaction signature:", tx);
       console.log("Capsule created. Transaction signature:", tx);
+    return capsulePda;
   } catch (error) {
     console.error("Error creating capsule:", error);
     throw error;
