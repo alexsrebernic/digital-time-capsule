@@ -148,21 +148,6 @@ export type Contract = {
           }
         },
         {
-          "name": "metadata",
-          "writable": true
-        },
-        {
-          "name": "masterEdition",
-          "writable": true
-        },
-        {
-          "name": "tokenMetadataProgram",
-          "docs": [
-            "Two of the Anchor account types, AccountInfo and UncheckedAccount do not implement any checks on the account being passed.",
-            "Anchor implements safety checks that encourage additional documentation describing why additional checks are not necesssary."
-          ]
-        },
-        {
           "name": "tokenProgram",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         },
@@ -173,10 +158,6 @@ export type Contract = {
         {
           "name": "systemProgram",
           "address": "11111111111111111111111111111111"
-        },
-        {
-          "name": "rent",
-          "address": "SysvarRent111111111111111111111111111111111"
         }
       ],
       "args": [
@@ -301,6 +282,10 @@ export type Contract = {
           {
             "name": "releasedDate",
             "type": "i64"
+          },
+          {
+            "name": "locked",
+            "type": "bool"
           }
         ]
       }

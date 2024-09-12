@@ -7,12 +7,9 @@ const PROGRAM_ID = new PublicKey("DWScEV42ig3zGpZUhVXtuV2BzwQ4oxnFeXiBdZB6uDaZ")
 // Function to initialize the capsule machine
 export const initializeCapsuleMachine = async (program: Program<Contract>, provider: anchor.AnchorProvider) => {
   const capsuleMachine = Keypair.generate();
-  const mint = Keypair.generate();
 
   try {
     const init_accounts = {
-      signer: provider.wallet.publicKey,
-      mint: mint.publicKey,
       capsuleMachine: capsuleMachine.publicKey,
       user: provider.wallet.publicKey,
       systemProgram: SystemProgram.programId,
@@ -27,8 +24,9 @@ export const initializeCapsuleMachine = async (program: Program<Contract>, provi
     tx.add(instruction)
     tx.feePayer = provider.wallet.publicKey
     tx.recentBlockhash = (await provider.connection.getLatestBlockhash()).blockhash;
-    tx.partialSign(mint);
-    await sendAndConfirmTransaction(provider.connection,tx,[mint])
+    tx.partialSign(capsuleMachine);
+
+    await provider.wallet.signTransaction(tx)
 
     console.log("Capsule machine initialized. Transaction signature:", tx);
     return capsuleMachine.publicKey;
@@ -47,45 +45,37 @@ export const createCapsule = async (
   releaseDate: number
 ) => {
   try {
-    const capsuleMachineAccount = await program.account.capsuleMachine.fetch(
-      capsuleMachinePublicKey
-    );
-
-    const [capsulePda] = PublicKey.findProgramAddressSync(
-      [
-        new anchor.BN(capsuleMachineAccount.count).toArrayLike(Buffer, "be", 8),
-        capsuleMachinePublicKey.toBuffer(),
-      ],
-      PROGRAM_ID
-    );
+    console.log(capsuleMachinePublicKey)
+  
 
     const mint = Keypair.generate();
     const metadata = await getMetadataPda(mint.publicKey);
     const masterEdition = await getMasterEditionPda(mint.publicKey);
-
+    const capsule = 
     const accounts = {
-      capsule: capsulePda,
-      user: provider.wallet.publicKey,
       capsuleMachine: capsuleMachinePublicKey,
+      user: provider.wallet.publicKey,
       mint: mint.publicKey,
-      metadata,
-      masterEdition,
+      // metadata,
       tokenAccount: await getAssociatedTokenAddress(mint.publicKey, provider.wallet.publicKey),
-      tokenMetadataProgram: new PublicKey("metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"),
+      // tokenMetadataProgram: new PublicKey("metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"),
+      systemProgram: SystemProgram.programId,
       tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
       associatedTokenProgram: new PublicKey("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"),
-      systemProgram: SystemProgram.programId,
-      rent: anchor.web3.SYSVAR_RENT_PUBKEY,
     };
+    const tx = new Transaction();
 
-    const tx = await program.methods
+    const instruction = await program.methods
       .createCapsule(new anchor.BN(releaseDate), ipfsHash)
       .accounts(accounts)
-      .signers([mint])
-      .rpc();
+      .instruction()
 
-    console.log("Capsule created. Transaction signature:", tx);
-    return capsulePda;
+      tx.add(instruction)
+      tx.recentBlockhash = (await provider.connection.getLatestBlockhash()).blockhash;
+      tx.partialSign(mint);
+  
+      await provider.wallet.signTransaction(tx)
+      console.log("Capsule created. Transaction signature:", tx);
   } catch (error) {
     console.error("Error creating capsule:", error);
     throw error;
