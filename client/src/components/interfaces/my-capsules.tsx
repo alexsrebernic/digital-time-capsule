@@ -87,13 +87,13 @@ export function MyCapsules({ capsules, loading }: MyCapsuleProps) {
               </p>
             </CardContent>
             <CardFooter className="space-x-2">
-              <a href={`/capsule/${capsule.id}`}>
+              <Link href={`/capsule/${capsule.id}`}>
                 <span
                   className={`px-3 py-1 rounded-full text-xs font-semibold bg-gray-200 text-gray-600 hover:bg-gray-300 hover:text-gray-700 transition hover:shadow-sm`}
                 >
                   View capsule
                 </span>
-              </a>
+              </Link>
              
               <span
                 className={`px-3 py-1 rounded-full text-xs font-semibold ${

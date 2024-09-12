@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { DigitalTimeCapsuleForm } from "@/components/interfaces/digital-time-capsule-form";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,9 @@ import { AuthGuardRedirect } from "@/components/auth/AuthGuardRedirect";
 import { uploadToPinata } from "@/utils/pinataUtils";
 import { useSolana } from "@/components/SolanaProvider";
 import { PublicKey } from "@solana/web3.js";
+import { useCapsuleMachine } from "@/hooks/useCapsuleMachine";
+import { createCapsule } from "@/utils/solanaUtils";
+import { useAnchorWallet, useWallet } from "@solana/wallet-adapter-react";
 
 interface CapsuleData {
   title: string;
@@ -21,16 +24,14 @@ export default function CreateDigitalTimeCapsuleForm() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { program, provider } = useSolana();
-
-  const handleGoBack = () => {
-    router.back();
-  };
+  const capsuleMachinePublicKey = useCapsuleMachine()
+  const wallet = useAnchorWallet()
 
   const handleSubmit = async (data: CapsuleData) => {
     setIsSubmitting(true);
     try {
-      if (!program || !provider) {
-        throw new Error("Solana connection not initialized");
+      if (!program || !provider || !wallet || !capsuleMachinePublicKey) {
+        throw new Error("Solana connection not initialized, wallet not connected, or capsule machine not ready");
       }
 
       const ipfsHash = await uploadToPinata(data);
@@ -38,22 +39,18 @@ export default function CreateDigitalTimeCapsuleForm() {
 
       const releaseDate = Math.floor(new Date(data.openingDate).getTime() / 1000);
 
-      // Placeholder for contract interaction
-      // Replace this with actual contract call when available
-      console.log("Creating capsule with data:", { ipfsHash, releaseDate });
-      // const capsulePda = await program.methods.createCapsule(new BN(releaseDate), ipfsHash)
-      //   .accounts({
-      //     // Add necessary accounts here
-      //   })
-      //   .rpc();
+      const capsulePda = await createCapsule(
+        program,
+        provider,
+        capsuleMachinePublicKey,
+        ipfsHash,
+        releaseDate
+      );
 
-      // For now, we'll use a mock PDA
-      const mockPda = PublicKey.unique();
-
-      console.log("Capsule created with PDA:", mockPda.toBase58());
+      console.log("Capsule created with PDA:", capsulePda.toBase58());
 
       // Navigate to success page or capsule view
-      router.push(`/capsule/${mockPda.toBase58()}`);
+      router.push(`/capsule/${capsulePda.toBase58()}`);
     } catch (error) {
       console.error("Error creating capsule:", error);
       // Handle error (show error message to user)
@@ -61,7 +58,9 @@ export default function CreateDigitalTimeCapsuleForm() {
       setIsSubmitting(false);
     }
   };
-
+  const handleGoBack = () => {
+    router.back();
+  };
   return (
     <AuthGuardRedirect>
       <Button

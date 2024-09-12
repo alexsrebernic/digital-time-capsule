@@ -1,23 +1,18 @@
 "use client"
-import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import { Connection, PublicKey } from '@solana/web3.js';
-import { Program, AnchorProvider, Idl } from '@coral-xyz/anchor';
+import React, { createContext, useContext, useEffect, useMemo } from 'react';
+import { Connection, PublicKey, Transaction } from '@solana/web3.js';
+import { Program, AnchorProvider, Idl, web3 } from '@coral-xyz/anchor';
 import { useAnchorWallet, useConnection, useWallet } from '@solana/wallet-adapter-react';
-import { MockProgram } from '@/mocks/MockProgram';
-// Placeholder for the contract type
-type PlaceholderContract = {
-  // Add placeholder methods and properties here
-  // For example:
-  // createCapsule: (args: any) => Promise<any>;
-  // retrieveCapsule: (args: any) => Promise<any>;
-};
+import { Contract } from '@/models/contract';
+import { PROGRAM_ID } from '@/utils/solanaUtils';
+import idl from '@/utils/contract.json';
+
 interface SolanaContextType {
-  program: MockProgram | null;
+  program: Program<Contract> | null;
   provider: AnchorProvider | null;
 }
 
 const SolanaContext = createContext<SolanaContextType | null>(null);
-
 
 export const useSolana = () => {
   const context = useContext(SolanaContext);
@@ -26,43 +21,38 @@ export const useSolana = () => {
   }
   return context;
 };
+// Extend AnchorProvider with sendAndConfirm method
 
 export const SolanaProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [program, setProgram] = useState<MockProgram | null>(null);
-  const [provider, setProvider] = useState<AnchorProvider | null>(null);
   const { connection } = useConnection();
   const wallet = useAnchorWallet();
   const { connected } = useWallet();
 
+  const provider = useMemo(() => {
+    if (wallet) {
+      return new AnchorProvider(connection, wallet, {
+        preflightCommitment: 'processed',
+        commitment: 'processed'
+      });
+    }
+    return null;
+  }, [connection, wallet]);
+
+  const program = useMemo(() => {
+    if (provider) {
+      return new Program(idl as Idl, PROGRAM_ID as any, provider as any) as unknown as Program<Contract>;
+    }
+    return null;
+  }, [provider]);
 
   useEffect(() => {
-    console.log("SolanaProvider effect triggered");
-    console.log("Wallet:", wallet ? "exists" : "null");
-    console.log("Connection:", connection ? "exists" : "null");
-    console.log("Connected:", connected);
-
-    if (wallet && connected) {
-      console.log("Attempting to initialize Solana connection");
-      const newProvider = new AnchorProvider(connection, wallet, {});
-      setProvider(newProvider);
-      setProgram(new MockProgram());
-      console.log("Solana connection initialized");
-    } else {
-      console.log("Conditions not met for Solana connection");
-      setProvider(null);
-      setProgram(null);
+    if (program) {
+      connection.onLogs(PROGRAM_ID, console.log);
     }
-  }, [wallet, connection, connected]);
-
-  const contextValue = useMemo(() => ({
-    program,
-    provider,
-  }), [program, provider]);
-
- 
+  }, [program, connection]);
 
   return (
-    <SolanaContext.Provider value={contextValue}>
+    <SolanaContext.Provider value={{ program, provider }}>
       {children}
     </SolanaContext.Provider>
   );

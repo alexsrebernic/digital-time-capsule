@@ -1,23 +1,27 @@
-import { PublicKey, Keypair } from "@solana/web3.js";
+import { PublicKey, Keypair, SystemProgram } from "@solana/web3.js";
 import * as anchor from "@coral-xyz/anchor";
+import { Program } from "@coral-xyz/anchor";
+import { Contract } from "../models/contract";
 
-// Define a type for your Anchor program
-type CapsuleMachineProgram = anchor.Program<anchor.Idl>;
+const PROGRAM_ID = new PublicKey("DWScEV42ig3zGpZUhVXtuV2BzwQ4oxnFeXiBdZB6uDaZ");
 
 // Function to initialize the capsule machine
-export const initializeCapsuleMachine = async (program: CapsuleMachineProgram, provider: anchor.AnchorProvider) => {
+export const initializeCapsuleMachine = async (program: Program<Contract>, provider: anchor.AnchorProvider) => {
   const capsuleMachine = Keypair.generate();
 
   try {
+    const init_accounts = {
+      capsuleMachine: capsuleMachine.publicKey,
+      user: provider.wallet.publicKey,
+      systemProgram: SystemProgram.programId,
+    };
     const tx = await program.methods
       .initializeCapsuleMachine()
-      .accounts({
-        capsuleMachine: capsuleMachine.publicKey,
-        user: provider.wallet.publicKey,
-        systemProgram: anchor.web3.SystemProgram.programId,
-      })
+      .accounts(init_accounts)
       .signers([capsuleMachine])
       .rpc();
+
+    await provider.connection.confirmTransaction(tx, 'confirmed');
 
     console.log("Capsule machine initialized. Transaction signature:", tx);
     return capsuleMachine.publicKey;
@@ -29,42 +33,47 @@ export const initializeCapsuleMachine = async (program: CapsuleMachineProgram, p
 
 // Function to create a capsule
 export const createCapsule = async (
-  program: CapsuleMachineProgram,
+  program: Program<Contract>,
   provider: anchor.AnchorProvider,
   capsuleMachinePublicKey: PublicKey,
   ipfsHash: string,
   releaseDate: number
 ) => {
   try {
-    const capsuleMachineAccount = await (program.account as any).capsuleMachine.fetch(capsuleMachinePublicKey);
-    const [capsulePda, ] = PublicKey.findProgramAddressSync(
+    const capsuleMachineAccount = await program.account.capsuleMachine.fetch(
+      capsuleMachinePublicKey
+    );
+
+    const [capsulePda] = PublicKey.findProgramAddressSync(
       [
-        Buffer.from(capsuleMachineAccount.count.toString()),
+        new anchor.BN(capsuleMachineAccount.count).toArrayLike(Buffer, "be", 8),
         capsuleMachinePublicKey.toBuffer(),
       ],
-      program.programId
+      PROGRAM_ID
     );
 
     const mint = Keypair.generate();
     const metadata = await getMetadataPda(mint.publicKey);
     const masterEdition = await getMasterEditionPda(mint.publicKey);
 
+    const accounts = {
+      capsule: capsulePda,
+      user: provider.wallet.publicKey,
+      capsuleMachine: capsuleMachinePublicKey,
+      mint: mint.publicKey,
+      metadata,
+      masterEdition,
+      tokenAccount: await getAssociatedTokenAddress(mint.publicKey, provider.wallet.publicKey),
+      tokenMetadataProgram: new PublicKey("metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"),
+      tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
+      associatedTokenProgram: new PublicKey("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"),
+      systemProgram: SystemProgram.programId,
+      rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+    };
+
     const tx = await program.methods
       .createCapsule(new anchor.BN(releaseDate), ipfsHash)
-      .accounts({
-        capsule: capsulePda,
-        user: provider.wallet.publicKey,
-        capsuleMachine: capsuleMachinePublicKey,
-        mint: mint.publicKey,
-        metadata,
-        masterEdition,
-        tokenAccount: await getAssociatedTokenAddress(mint.publicKey, provider.wallet.publicKey),
-        tokenMetadataProgram: new PublicKey("metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"),
-        tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
-        associatedTokenProgram: new PublicKey("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"),
-        systemProgram: anchor.web3.SystemProgram.programId,
-        rent: anchor.web3.SYSVAR_RENT_PUBKEY,
-      })
+      .accounts(accounts)
       .signers([mint])
       .rpc();
 
@@ -115,3 +124,5 @@ const getAssociatedTokenAddress = async (mint: PublicKey, owner: PublicKey): Pro
   );
   return associatedTokenAddress;
 };
+
+export { PROGRAM_ID };
