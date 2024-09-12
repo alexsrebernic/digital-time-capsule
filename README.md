@@ -1,4 +1,3 @@
-
 # Digital Time Capsule
 
 ## Overview
@@ -25,7 +24,7 @@ The project is organized into two main folders:
 
 Here's a high-level overview of the Digital Time Capsule system architecture:
 
-<antArtifact identifier="updated-system-architecture" type="application/vnd.ant.mermaid" title="Updated Digital Time Capsule System Architecture">
+```mermaid
 graph TD
     A[User] -->|Interacts with| B[Web Interface]
     B -->|Connects to| C[Solana Wallet]
@@ -38,7 +37,7 @@ graph TD
     J[Time Oracle] -->|Provides time data| D
     E -->|Uses| K[On-chain Encryption]
     L[Capsule Contributors] -->|Collaborate on| F
-
+```
 
 ## Technical Stack
 
@@ -90,7 +89,54 @@ graph TD
 
 ## Usage
 
-[Provide brief instructions on how to use the dApp, create a capsule, etc.]
+The Digital Time Capsule application offers various features to preserve and manage your digital memories. Here's how to use the main functionalities:
+
+### Home Page
+- Visit the home page to get an overview of the Digital Time Capsule concept.
+- Connect your wallet to access personalized features.
+- Navigate to different sections of the application.
+
+### Creating a Time Capsule
+1. Go to the "Create" page.
+2. Fill in the capsule details:
+   - Title
+   - Description
+   - Opening date
+   - Upload files (images, documents, etc.)
+3. Choose whether to make the capsule public or private.
+4. Submit the form to create your time capsule.
+
+### Viewing Your Capsules
+1. Navigate to the "My Capsules" page.
+2. Browse through your list of created capsules.
+3. Use the search and filter options to find specific capsules.
+4. Click on a capsule to view its details.
+
+### Capsule Details
+- On the capsule detail page, you can:
+  - View the capsule's title, status, and opening date.
+  - See the countdown timer for sealed capsules.
+  - Access the capsule's contents if it's opened.
+  - Share, edit, or delete the capsule (if you're the owner).
+
+### User Profile
+1. Access your profile page to view your account information.
+2. See statistics about your capsules.
+3. Manage your account settings.
+
+### About Page
+- Visit the About page to learn more about the Digital Time Capsule concept, how it works, and its benefits.
+
+### Wallet Integration
+- Connect your Solana wallet to create and manage your time capsules.
+- Your wallet is required for all capsule-related operations.
+
+### Security and Privacy
+- Capsules are securely stored on the blockchain.
+- Set opening dates for future reveal of your capsule contents.
+- Choose between public and private capsules for different levels of sharing.
+
+Remember, all capsule operations (creation, viewing, and management) require a connected Solana wallet. Ensure your wallet is connected and has sufficient SOL for transaction fees when interacting with the application.
 
 ## Contributing
 
@@ -102,9 +148,42 @@ This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md
 
 ## Acknowledgments
 
-- Solana Foundation
-- Metaplex
-- [Any other acknowledgments]
+### Core Technologies
+- [Next.js](https://nextjs.org/): The React framework for building our web application.
+- [React](https://reactjs.org/): The foundation of our user interface.
+- [TypeScript](https://www.typescriptlang.org/): For adding static typing to our JavaScript codebase.
+
+### Blockchain Integration
+- [Solana](https://solana.com/): The blockchain platform powering our decentralized application.
+- [@solana/web3.js](https://solana-labs.github.io/solana-web3.js/): For Solana blockchain interactions.
+- [@coral-xyz/anchor](https://github.com/coral-xyz/anchor): The Solana development framework we used for smart contract integration.
+- [@solana/wallet-adapter](https://github.com/solana-labs/wallet-adapter): For seamless wallet connection and management.
+
+### UI Components and Styling
+- [Tailwind CSS](https://tailwindcss.com/): For rapid and responsive UI development.
+- [shadcn/ui](https://ui.shadcn.com/): Providing beautifully designed, accessible UI components.
+- [Lucide React](https://lucide.dev/): For the iconography used throughout the application.
+- [Framer Motion](https://www.framer.com/motion/): Adding smooth animations to enhance user experience.
+
+### Data Management and APIs
+- [Pinata SDK](https://github.com/PinataCloud/Pinata-SDK): For IPFS integration and decentralized file storage.
+- [Axios](https://axios-http.com/): Handling HTTP requests for our API interactions.
+
+### Development Tools
+- [ESLint](https://eslint.org/): Ensuring code quality and consistency.
+- [PostCSS](https://postcss.org/): For transforming CSS with JavaScript.
+
+### Date Handling
+- [date-fns](https://date-fns.org/): Modern JavaScript date utility library.
+
+### File Handling
+- [react-dropzone](https://react-dropzone.js.org/): For easy file uploads in our application.
+
+### Community and Learning Resources
+- [Solana Cookbook](https://solanacookbook.com/): An invaluable resource for Solana development best practices.
+- [Anchor Documentation](https://www.anchor-lang.com/): Guiding our Solana program development.
+- [Next.js Documentation](https://nextjs.org/docs): For in-depth Next.js features and API references.
+
 
 ## Contact
 
