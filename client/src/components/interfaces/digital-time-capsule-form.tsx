@@ -10,15 +10,27 @@ import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 
-// Define a type for the files with the preview property
 type FileWithPreview = File & {
   preview: string;
 };
 
-export function DigitalTimeCapsuleForm() {
-  // Use the defined type in useState
+interface DigitalTimeCapsuleFormProps {
+  onSubmit: (data: {
+    title: string;
+    description: string;
+    openingDate: string;
+    files: File[];
+    isPublic: boolean;
+  }) => void;
+  isSubmitting: boolean;
+}
+
+export function DigitalTimeCapsuleForm({ onSubmit, isSubmitting }: DigitalTimeCapsuleFormProps) {
   const [files, setFiles] = useState<FileWithPreview[]>([]);
   const [isPublic, setIsPublic] = useState(false);
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [openingDate, setOpeningDate] = useState('');
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     accept: { 'image/*': [], 'application/pdf': [] },
@@ -31,8 +43,13 @@ export function DigitalTimeCapsuleForm() {
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
-    // Handle form submission here
-    console.log('Form submitted');
+    onSubmit({
+      title,
+      description,
+      openingDate,
+      files,
+      isPublic
+    });
   }
 
   return (
@@ -46,15 +63,15 @@ export function DigitalTimeCapsuleForm() {
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
           <Label htmlFor="title">Capsule Title</Label>
-          <Input id="title" placeholder="Enter capsule title" required />
+          <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Enter capsule title" required />
         </div>
         <div>
           <Label htmlFor="description">Description</Label>
-          <Textarea id="description" placeholder="Describe your time capsule" required />
+          <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Describe your time capsule" required />
         </div>
         <div>
           <Label htmlFor="openingDate">Opening Date</Label>
-          <Input id="openingDate" type="date" min={format(new Date(), 'yyyy-MM-dd')} required />
+          <Input id="openingDate" type="date" value={openingDate} onChange={(e) => setOpeningDate(e.target.value)} min={format(new Date(), 'yyyy-MM-dd')} required />
         </div>
         <div>
           <Label htmlFor="fileUpload">Upload Files</Label>
@@ -98,8 +115,8 @@ export function DigitalTimeCapsuleForm() {
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
         >
-          <Button type="submit" className="w-full">
-            Create Capsule
+          <Button type="submit" className="w-full" disabled={isSubmitting}>
+            {isSubmitting ? 'Creating Capsule...' : 'Create Capsule'}
           </Button>
         </motion.div>
       </form>

@@ -10,9 +10,9 @@ interface AuthGuardProps {
 export const AuthGuardRedirect: React.FC<AuthGuardProps> = ({ children }) => {
 	const { connected, publicKey } = useWallet();
 	const router = useRouter();
-
 	useEffect(() => {
-		if (!connected || !publicKey) {
+	console.log(connected,publicKey)
+	if (!connected || !publicKey) {
 			router.replace("/");
 		}
 	}, [connected, publicKey, router]);
