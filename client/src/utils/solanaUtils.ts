@@ -1,27 +1,34 @@
-import { PublicKey, Keypair, SystemProgram } from "@solana/web3.js";
+import { PublicKey, Keypair, SystemProgram, sendAndConfirmTransaction, Transaction } from "@solana/web3.js";
 import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
 import { Contract } from "../models/contract";
-
 const PROGRAM_ID = new PublicKey("DWScEV42ig3zGpZUhVXtuV2BzwQ4oxnFeXiBdZB6uDaZ");
 
 // Function to initialize the capsule machine
 export const initializeCapsuleMachine = async (program: Program<Contract>, provider: anchor.AnchorProvider) => {
   const capsuleMachine = Keypair.generate();
+  const mint = Keypair.generate();
 
   try {
     const init_accounts = {
+      signer: provider.wallet.publicKey,
+      mint: mint.publicKey,
       capsuleMachine: capsuleMachine.publicKey,
       user: provider.wallet.publicKey,
       systemProgram: SystemProgram.programId,
     };
-    const tx = await program.methods
+    const tx = new Transaction();
+
+    console.log(program,provider)
+    const instruction = await program.methods
       .initializeCapsuleMachine()
       .accounts(init_accounts)
-      .signers([capsuleMachine])
-      .rpc();
-
-    await provider.connection.confirmTransaction(tx, 'confirmed');
+      .instruction();
+    tx.add(instruction)
+    tx.feePayer = provider.wallet.publicKey
+    tx.recentBlockhash = (await provider.connection.getLatestBlockhash()).blockhash;
+    tx.partialSign(mint);
+    await sendAndConfirmTransaction(provider.connection,tx,[mint])
 
     console.log("Capsule machine initialized. Transaction signature:", tx);
     return capsuleMachine.publicKey;

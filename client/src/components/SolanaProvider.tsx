@@ -40,7 +40,7 @@ export const SolanaProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const program = useMemo(() => {
     if (provider) {
-      return new Program(idl as Idl, PROGRAM_ID as any, provider as any) as unknown as Program<Contract>;
+      return new Program(idl as Idl, PROGRAM_ID as any) as unknown as Program<Contract>;
     }
     return null;
   }, [provider]);
