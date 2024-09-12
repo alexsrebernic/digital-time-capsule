@@ -1,8 +1,9 @@
-use anchor_lang::prelude::*;
+use anchor_lang::{prelude::*};
 use anchor_spl::{token::{TokenAccount, Mint, Token}, associated_token::AssociatedToken};
 use mpl_token_metadata::instructions::{CreateMasterEditionV3CpiBuilder,CreateMetadataAccountV3CpiBuilder};
 use mpl_token_metadata::types::{Creator, DataV2, };
-use mpl_token_metadata::accounts::{Metadata, MasterEdition};
+use mpl_token_metadata::ID as METADATA_PROGRAM_ID;
+//use mpl_token_metadata::accounts::{Metadata, MasterEdition};
 
 declare_id!("DWScEV42ig3zGpZUhVXtuV2BzwQ4oxnFeXiBdZB6uDaZ");
 
@@ -19,7 +20,6 @@ pub mod contract {
     pub fn create_capsule(ctx: Context<CreateCapsule>,
         release_date: i64,
         cid: String)-> Result<()> {
-        msg!("create capsule");
 
         let capsule: &mut Account<Capsule> = &mut ctx.accounts.capsule;
         let capsule_machine: &mut Account<CapsuleMachine> = &mut ctx.accounts.capsule_machine;
@@ -34,7 +34,7 @@ pub mod contract {
 
         //NFT metadata creation
 
-        let creators = vec![Creator {
+        /*let creators = vec![Creator {
             address: ctx.accounts.user.key(),
             verified: true,
             share: 100,
@@ -48,7 +48,7 @@ pub mod contract {
             creators: Some(creators),
             collection: None,
             uses: None,
-        };
+        };*/
 
         /*CreateMetadataAccountV3CpiBuilder::new(&ctx.accounts.metadata_program)
         .metadata(&ctx.accounts.metadata) // Metadata PDA
@@ -114,7 +114,7 @@ pub struct CreateCapsule<'info> {
     #[account(init, payer = user, associated_token::mint = mint, associated_token::authority = user)]
     pub token_account: Account<'info, TokenAccount>,
     //NFT metaplex metadata accounts
-    //#[account(mut, seeds = [b"metadata", metadata_program.key().as_ref(), mint.key().as_ref()], bump)]
+    //#[account(mut, seeds = ["metadata".as_bytes(), METADATA_PROGRAM_ID.as_ref(), mint.key().as_ref()], bump)]
     ///CHECK: This seems to be dangerous but idk
     //pub metadata: AccountInfo<'info>,
     //#[account(mut, seeds = [b"metadata", metadata_program.key().as_ref(), mint.key().as_ref(), b"edition"], bump)]
@@ -124,8 +124,7 @@ pub struct CreateCapsule<'info> {
     pub token_program: Program<'info, Token>,
     pub associated_token_program: Program<'info, AssociatedToken>,
     pub system_program: Program<'info, System>,
-    //CHECK: Maybe changing account types?
-    // Two of the Anchor account types, AccountInfo and UncheckedAccount do not implement any checks on the account being passed.
+    //CHECK: 
     //pub metadata_program: AccountInfo<'info>,
 
 }

@@ -1,13 +1,14 @@
 import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
 import { Contract } from "../target/types/contract";
-import { SystemProgram, Connection, PublicKey } from "@solana/web3.js";
+import { SystemProgram, Connection, PublicKey, Keypair } from "@solana/web3.js";
 import { assert, expect } from "chai";
+import { ASSOCIATED_PROGRAM_ID } from "@coral-xyz/anchor/dist/cjs/utils/token";
 
 const {
   TOKEN_PROGRAM_ID,
   getMint,
-  getAssociatedTokenAddress,
+  getAssociatedTokenAddressSync,
   getAccount,
 } = require("@solana/spl-token");
 const SPL_ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID: PublicKey = new PublicKey(
@@ -19,21 +20,51 @@ const METADATA_PROGRAM_ID: PublicKey = new PublicKey(
 
 describe("contract", () => {
   // Configure the client to use the local cluster.
-  const connection = new Connection("http://127.0.0.1:8899", "confirmed");
-  const provider = anchor.AnchorProvider.env();
+  //const connection = new Connection("http://127.0.0.1:8899", "confirmed");
+  //const provider = anchor.AnchorProvider.env();
+  const fs = require("fs");
+  const userKeypairPath =
+    require("os").homedir() + "/my-solana-wallet/my-keypair.json";
+  const userKeypair = anchor.web3.Keypair.fromSecretKey(
+    new Uint8Array(JSON.parse(fs.readFileSync(userKeypairPath, "utf8")))
+  );
+  const user = new anchor.Wallet(userKeypair);
+  const connection = new Connection(
+    "https://api.devnet.solana.com",
+    "confirmed"
+  );
+  const provider = new anchor.AnchorProvider(connection, user, {
+    commitment: "confirmed",
+  });
+  anchor.setProvider(provider);
 
   const program = anchor.workspace.Contract as Program<Contract>;
 
   const capsuleMachine = anchor.web3.Keypair.generate();
-  const user = provider.wallet;
+  //const user = provider.wallet;
 
   it("should initialize the capsule machine", async () => {
+    /*const airdropSignature = await provider.connection.requestAirdrop(
+      user.publicKey,
+      2 * 1000000000
+    );
+
+    const latestBlockHash = await provider.connection.getLatestBlockhash();
+
+    await provider.connection.confirmTransaction({
+      blockhash: latestBlockHash.blockhash,
+      lastValidBlockHeight: latestBlockHash.lastValidBlockHeight,
+      signature: airdropSignature,
+    });
+    console.log("airdrop confirmed {}", airdropSignature);*/
+
     const init_accounts = {
       capsuleMachine: capsuleMachine.publicKey,
       user: user.publicKey,
       systemProgram: SystemProgram.programId,
     };
 
+    //console.log(init_accounts);
     const tx = await program.methods
       .initializeCapsuleMachine()
       .accounts(init_accounts)
@@ -71,10 +102,14 @@ describe("contract", () => {
 
     const mint = anchor.web3.Keypair.generate();
     // Derive the associated token account address (PDA)
-    const tokenAccount = await getAssociatedTokenAddress(
+    const tokenAccount = getAssociatedTokenAddressSync(
       mint.publicKey, // Mint public key
-      user.publicKey // Authority (user) public key
+      user.publicKey, // Authority (user) public key
+      true,
+      TOKEN_PROGRAM_ID,
+      ASSOCIATED_PROGRAM_ID
     );
+    console.log("tokenAccount {}", tokenAccount);
 
     // Derive Metadata pda
     const [metadataPda, metadataBump] =
@@ -91,7 +126,7 @@ describe("contract", () => {
       capsuleMachine: capsuleMachine.publicKey,
       user: user.publicKey,
       mint: mint.publicKey,
-      tokenAccount: tokenAccount.publicKey,
+      tokenAccount: tokenAccount,
       //metadata: metadataPda,
       systemProgram: SystemProgram.programId,
       tokenProgram: TOKEN_PROGRAM_ID,
@@ -131,7 +166,7 @@ describe("contract", () => {
     console.log(capsuleData);
     expect(capsuleData.creator.toString()).to.equal(user.publicKey.toString());
     expect(capsuleData.locked).to.equal(true);
-
+    console.log("capsule data ok");
     // Fetch Mint Account
     const mintAccount = await getMint(connection, mint.publicKey);
     console.log(mintAccount);
@@ -140,17 +175,17 @@ describe("contract", () => {
     expect(mintAccount.mintAuthority.toString()).to.equal(
       user.publicKey.toString()
     ); // Verify the mint authority
-
+    console.log("mint ok");
     // Fetch the associated token account
     const ATA = await getAccount(connection, tokenAccount);
-    console.log(ATA);
+    console.log("ATA", ATA);
     expect(ATA.mint.toString()).to.equal(mint.publicKey.toString());
     expect(ATA.owner.toString()).to.equal(user.publicKey.toString());
-
+    console.log("ata ok");
     //Fetch Metadata account
-    /*const metadataAccountInfo = await connection.getAccountInfo(metadataPda);
-    expect(metadataAccountInfo).to.not.be.null;
-    console.log("Metadata Account Info:", metadataAccountInfo);*/
+    //const metadataAccountInfo = await connection.getAccountInfo(metadataPda);
+    //expect(metadataAccountInfo).to.not.be.null;
+    //console.log("Metadata Account Info:", metadataAccountInfo);
   });
 
   it("should retrieve a capsule", async () => {
