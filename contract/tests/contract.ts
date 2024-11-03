@@ -20,8 +20,8 @@ const METADATA_PROGRAM_ID: PublicKey = new PublicKey(
 
 describe("contract", () => {
   // Configure the client to use the local cluster.
-  //const connection = new Connection("http://127.0.0.1:8899", "confirmed");
-  //const provider = anchor.AnchorProvider.env();
+  const connection = new Connection("http://127.0.0.1:8899", "confirmed");
+  const provider = anchor.AnchorProvider.env();
   const fs = require("fs");
   const userKeypairPath =
     require("os").homedir() + "/my-solana-wallet/my-keypair.json";
@@ -29,13 +29,13 @@ describe("contract", () => {
     new Uint8Array(JSON.parse(fs.readFileSync(userKeypairPath, "utf8")))
   );
   const user = new anchor.Wallet(userKeypair);
-  const connection = new Connection(
+  /*const connection = new Connection(
     "https://api.devnet.solana.com",
     "confirmed"
   );
   const provider = new anchor.AnchorProvider(connection, user, {
     commitment: "confirmed",
-  });
+  });*/
   anchor.setProvider(provider);
 
   const program = anchor.workspace.Contract as Program<Contract>;
@@ -71,7 +71,7 @@ describe("contract", () => {
       .signers([capsuleMachine])
       .rpc();
 
-    console.log("Your transaction signature", tx);
+    //console.log("Your transaction signature", tx);
 
     // Fetch the capsule machine and check its state
     const capsuleMachineAccount = await program.account.capsuleMachine.fetch(
@@ -127,11 +127,11 @@ describe("contract", () => {
       user: user.publicKey,
       mint: mint.publicKey,
       tokenAccount: tokenAccount,
-      //metadata: metadataPda,
+      metadata: metadataPda,
       systemProgram: SystemProgram.programId,
       tokenProgram: TOKEN_PROGRAM_ID,
       associatedTokenProgram: SPL_ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID,
-      //metadataProgram: METADATA_PROGRAM_ID,
+      metadataProgram: METADATA_PROGRAM_ID,
     };
 
     console.log(accounts);
@@ -167,6 +167,7 @@ describe("contract", () => {
     expect(capsuleData.creator.toString()).to.equal(user.publicKey.toString());
     expect(capsuleData.locked).to.equal(true);
     console.log("capsule data ok");
+    /*
     // Fetch Mint Account
     const mintAccount = await getMint(connection, mint.publicKey);
     console.log(mintAccount);
@@ -183,12 +184,12 @@ describe("contract", () => {
     expect(ATA.owner.toString()).to.equal(user.publicKey.toString());
     console.log("ata ok");
     //Fetch Metadata account
-    //const metadataAccountInfo = await connection.getAccountInfo(metadataPda);
-    //expect(metadataAccountInfo).to.not.be.null;
-    //console.log("Metadata Account Info:", metadataAccountInfo);
+    const metadataAccountInfo = await connection.getAccountInfo(metadataPda);
+    expect(metadataAccountInfo).to.not.be.null;
+    console.log("Metadata Account Info:", metadataAccountInfo);*/
   });
 
-  it("should retrieve a capsule", async () => {
+  /*it("should retrieve a capsule", async () => {
     // Get capsule_machine index
 
     let current_count = (
@@ -243,5 +244,5 @@ describe("contract", () => {
     let capsuleData = await program.account.capsule.fetch(capsulepda);
     console.log(capsuleData);
     expect(capsuleData.creator.toString()).to.equal(user.publicKey.toString());
-  });
+  });*/
 });

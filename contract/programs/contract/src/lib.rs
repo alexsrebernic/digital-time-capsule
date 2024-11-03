@@ -1,11 +1,29 @@
-use anchor_lang::{prelude::*};
-use anchor_spl::{token::{TokenAccount, Mint, Token}, associated_token::AssociatedToken};
-use mpl_token_metadata::instructions::{CreateMasterEditionV3CpiBuilder,CreateMetadataAccountV3CpiBuilder};
-use mpl_token_metadata::types::{Creator, DataV2, };
-use mpl_token_metadata::ID as METADATA_PROGRAM_ID;
+use anchor_lang::prelude::*;
+use anchor_spl::{
+    token::{
+        TokenAccount,
+        Mint,
+        Token
+    },
+    associated_token::AssociatedToken,
+    metadata::{
+        mpl_token_metadata::instructions::{
+            CreateMasterEditionV3CpiBuilder,
+            CreateMetadataAccountV3CpiBuilder
+        },
+        mpl_token_metadata::types::{Creator, DataV2},
+        mpl_token_metadata::ID as METADATA_PROGRAM_ID,
+        MasterEditionAccount, 
+        Metadata, 
+        MetadataAccount
+    }
+    };
+//use mpl_token_metadata::instructions::{CreateMasterEditionV3CpiBuilder,CreateMetadataAccountV3CpiBuilder};
+//use mpl_token_metadata::types::{Creator, DataV2, };
+//use mpl_token_metadata::ID as METADATA_PROGRAM_ID;
 //use mpl_token_metadata::accounts::{Metadata, MasterEdition};
 
-declare_id!("DWScEV42ig3zGpZUhVXtuV2BzwQ4oxnFeXiBdZB6uDaZ");
+declare_id!("HUrnADZpfPTUpxB52odvfVr242tUZTWbpUYWCajAKYHE");
 
 #[program]
 pub mod contract {
@@ -34,7 +52,7 @@ pub mod contract {
 
         //NFT metadata creation
 
-        /*let creators = vec![Creator {
+        let creators = vec![Creator {
             address: ctx.accounts.user.key(),
             verified: true,
             share: 100,
@@ -48,17 +66,18 @@ pub mod contract {
             creators: Some(creators),
             collection: None,
             uses: None,
-        };*/
+        };
 
-        /*CreateMetadataAccountV3CpiBuilder::new(&ctx.accounts.metadata_program)
-        .metadata(&ctx.accounts.metadata) // Metadata PDA
+        CreateMetadataAccountV3CpiBuilder::new(&ctx.accounts.metadata_program)
+        .metadata(&ctx.accounts.metadata.to_account_info()) // Metadata PDA
         .mint(&ctx.accounts.mint.to_account_info()) // Mint o                                                                                                                                                                                                                                                                                                                         f the NFT
         .mint_authority(&ctx.accounts.user) // Mint authority (user creating the NFT)
         .payer(&ctx.accounts.user) // Payer of the transaction
         .update_authority(&ctx.accounts.user, true) // Update authority of the NFT
+        .system_program(&ctx.accounts.system_program.to_account_info())
         .data(data)
         .is_mutable(false) // Whether the metadata is mutable
-        .invoke()?;*/
+        .invoke()?;
         Ok(())
     }
 
@@ -93,15 +112,15 @@ pub struct InitializeMachine<'info> {
 #[derive(Accounts)]
 pub struct CreateCapsule<'info> {             
     //seed schema     
-    #[account(init, 
+    #[account(
+        init, 
         seeds = [
             &capsule_machine.count.to_be_bytes(), 
             capsule_machine.key().as_ref()
-        ], 
-        //constraint = ,
+        ],
         bump, 
         payer = user, 
-        space=99
+        space = 99
     )]
     pub capsule: Account<'info, Capsule>,
     #[account(mut)]
@@ -109,24 +128,34 @@ pub struct CreateCapsule<'info> {
     #[account(mut)]
     pub user: Signer<'info>,
     //Mint account
-    #[account(init, payer = user, mint::decimals = 0, mint::authority = user)]
+    #[account(
+        init, 
+        payer = user,
+        mint::decimals = 0,
+        mint::authority = user
+    )]
     pub mint: Account<'info, Mint>,
-    #[account(init, payer = user, associated_token::mint = mint, associated_token::authority = user)]
+    #[account(
+        init,
+        payer = user,
+        associated_token::mint = mint,
+        associated_token::authority = user
+    )]
     pub token_account: Account<'info, TokenAccount>,
+
     //NFT metaplex metadata accounts
-    //#[account(mut, seeds = ["metadata".as_bytes(), METADATA_PROGRAM_ID.as_ref(), mint.key().as_ref()], bump)]
-    ///CHECK: This seems to be dangerous but idk
-    //pub metadata: AccountInfo<'info>,
-    //#[account(mut, seeds = [b"metadata", metadata_program.key().as_ref(), mint.key().as_ref(), b"edition"], bump)]
-    //pub master_edition: AccountInfo<'info>,
-    // Programs
+    #[account(mut)]
+    /// CHECK: This account will be initialized by the metaplex program
+    pub metadata: UncheckedAccount<'info>,
+    //#[account(mut)]
+    /// CHECK: This account will be initialized by the metaplex program
+    //pub master_edition: UncheckedAccount<'info>,
     
+    // Programs
     pub token_program: Program<'info, Token>,
     pub associated_token_program: Program<'info, AssociatedToken>,
+    pub metadata_program: Program<'info, Metadata>,
     pub system_program: Program<'info, System>,
-    //CHECK: 
-    //pub metadata_program: AccountInfo<'info>,
-
 }
 
 #[derive(Accounts)]
